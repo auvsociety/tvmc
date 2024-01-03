@@ -1,0 +1,20 @@
+{
+    "thrusterSpec": {
+        "noOfThrusters": 7,
+        "minPWM": 1100,
+        "maxPWM": 1900,
+        "zeroThrustPWM": 1500,
+        "minThrust": -100,
+        "maxThrust": 100,
+        "fullThrust": 100,
+        "pwmToThrustMap": "./pwm-to-thrust.csv"
+    },
+    "thrustVectors": {
+        "surge": [0,0,0,1,1,1,1],
+        "sway": [0,0,0,-1,-1,1,1],
+        "heave": [1,1,1,0,0,0,0],
+        "yaw": [0,0,0,1,-1,1,-1],
+        "pitch": [-1,1,1,0,0,0,0],
+        "roll": [0,-1,1,0,0,0,0]
+    }
+}
