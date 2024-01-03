@@ -2,7 +2,7 @@
 <package format="2">
   <name>rose_tvmc</name>
   <version>0.0.1</version>
-  <description>The video package</description>
+  <description>TVMC</description>
 
   <maintainer email="cs21b1041@iiitdm.ac.in">Rose</maintainer>
 

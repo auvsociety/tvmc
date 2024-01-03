@@ -14,7 +14,7 @@ namespace ThrustReporter
     /**
      * Reports the corresponding thrust values for the provided thrust vector.
      * 
-     * @param thrust_vector List of float values between -1 to 1 representing the (linear) thrust of each thruster.
+     * @param thrust_vector List of float values representing the thrust of each thruster.
     */
     void report(float* thrust_vector);
 
@@ -43,7 +43,7 @@ namespace ThrustReporter
      * 
      * Reports the corresponding PWM values for the provided thrust vector.
      * 
-     * @param thrust_vector List of float values between -1 to 1 representing the (linear) thrust of each thruster.
+     * @param thrust_vector List of float values representing the thrust of each thruster.
     */
     void writeThrusterValues(float* thrust_vector);
 }
