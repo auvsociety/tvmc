@@ -5,7 +5,6 @@ The Thrustered Vehicle Motion Controller.
 This is a rewrite of the original [TVMC](https://github.com/auvsocietyiiitdm/thrustered_vehicle_motioncontroller.git),    
 and is also based on updates from the modified version found [here](https://github.com/Phantom140204/thrustered_vehicle_motioncontroller).
 
-
 The original TVMC had to included in and directly interfaced with C++ or through python through the provided pybinds, which was tedious, and required a new copy of the source code to be used in every new project.
 
 This is a standalone package that is meant to be used as-is, and can controlled via exposed ros topics.
