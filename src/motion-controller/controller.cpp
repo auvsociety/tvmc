@@ -105,31 +105,27 @@ void MotionController::setPIDLimits(uint8_t dof, float output_min, float output_
 
 void MotionController::setTargetPoint(uint8_t dof, float target)
 {
-    // ensure control mode is set to closed loop for given DoF
-    if (control_modes[dof] != CLOSED_LOOP_MODE)
-    {
-        ROS_ERROR("[DOF %d] %s", dof, "Error, closed loop control not enabled.");
-        return;
-    }
-
     // set target value for controller
     controllers[dof].setTargetValue(target);
 
+    // don't do anything if in open loop mode
+    if (control_modes[dof] == OPEN_LOOP_MODE) return;
+
+    // poll output and update thrust
+    thrust[dof] = controllers[dof].updateOutput();
+
     // update thrust values on request
+    if (control_modes[dof] == CLOSED_LOOP_MODE)
     MotionController::updateThrustValues();
 }
 
 void MotionController::updateCurrentPoint(uint8_t dof, float current)
 {
-    // ensure control mode is set to closed loop for given DoF
-    if (control_modes[dof] != CLOSED_LOOP_MODE)
-    {
-        ROS_ERROR("[DOF %d] %s", dof, "Error, closed loop control not enabled.");
-        return;
-    }
-
     // update current value for controller
     controllers[dof].setCurrentValue(current);
+
+    // don't do anything if in open loop mode
+    if (control_modes[dof] == OPEN_LOOP_MODE) return;
 
     // poll output and update thrust
     thrust[dof] = controllers[dof].updateOutput();
