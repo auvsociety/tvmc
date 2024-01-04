@@ -1,20 +1,30 @@
 #ifndef THRUSTER_CONFIG_H
 #define THRUSTER_CONFIG_H
 
+#include <map>
 #include <vector>
 #include <chrono>
+#include <ros/console.h>
+
+typedef struct PWMThrustMap {
+    std::vector<float> thrust;
+    std::vector<int> pwm;
+} PWMThrustMap;
 
 typedef struct ThrusterSpec
 {
     int number_of_thrusters;
-    int max_thrust;
     int min_thrust;
+    int max_thrust;
     int full_thrust;
-    int zero_thrust_pwm;
-    int min_pwm;
-    int max_pwm;
-    std::vector<float> thrust_map_thrust;
-    std::vector<int> thrust_map_pwm;
+
+    std::vector<std::string> thruster_types;
+
+    // int zero_thrust_pwm;
+    // int min_pwm;
+    // int max_pwm;
+    // std::vector<float> thrust_map_thrust;
+    // std::vector<int> thrust_map_pwm;
 } ThrusterSpec;
 
 typedef struct ThrustVectors
@@ -32,6 +42,7 @@ typedef struct ThrusterConfig
 {
     ThrusterSpec spec;
     ThrustVectors vectors;
+    std::map<std::string, PWMThrustMap> thrust_maps;
 
 } ThrusterConfig;
 

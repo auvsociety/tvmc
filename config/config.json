@@ -1,13 +1,14 @@
 {
     "thrusterSpec": {
         "noOfThrusters": 7,
-        "minPWM": 1100,
-        "maxPWM": 1900,
-        "zeroThrustPWM": 1500,
         "minThrust": -100,
         "maxThrust": 100,
         "fullThrust": 100,
-        "pwmToThrustMap": "./pwm-to-thrust.csv"
+        "thrustMaps": ["t100", "t100", "t100", "t100", "t200", "t200", "t200"]
+    },
+    "pwmThrustMaps": {
+        "t200": "./t200.csv",
+        "t100": "./t100.csv"
     },
     "thrustVectors": {
         "surge": [0,0,0,1,1,1,1],

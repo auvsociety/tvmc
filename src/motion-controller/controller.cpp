@@ -18,7 +18,7 @@ MotionController::MotionController(ros::NodeHandle *nhx)
     {
         control_modes[d] = OPEN_LOOP_MODE;
         controllers[d].setConstants(1, 1, 1, 0.001);
-        controllers[d].setMinMaxLimits(-100, 100, -50, 50);
+        controllers[d].setMinMaxLimits(-config.spec.min_thrust, config.spec.max_thrust, -config.spec.min_thrust / 2, config.spec.max_thrust / 2);
         thrust[d] = 0;
     }
 
@@ -42,7 +42,7 @@ MotionController::MotionController(ros::NodeHandle *nhx)
 
     sub_command = nhc->subscribe<msg::Command>(
         "command", 50,
-        [&](const msg::CommandConstPtr& x)
+        [&](const msg::CommandConstPtr &x)
         {
             if (x->Command == x->REFRESH)
                 this->refresh();
@@ -53,27 +53,27 @@ MotionController::MotionController(ros::NodeHandle *nhx)
         });
 
     sub_control_mode = nhc->subscribe<msg::ControlMode>(
-        "control_mode", 50, [&](const msg::ControlModeConstPtr& x)
+        "control_mode", 50, [&](const msg::ControlModeConstPtr &x)
         { this->setControlMode(x->DoF, x->Mode); });
 
     sub_current_point = nhc->subscribe<msg::CurrentPoint>(
-        "current_point", 50, [&](const msg::CurrentPointConstPtr& x)
+        "current_point", 50, [&](const msg::CurrentPointConstPtr &x)
         { this->updateCurrentPoint(x->DoF, x->Current); });
 
     sub_pid_constants = nhc->subscribe<msg::PidConstants>(
-        "pid_constants", 50, [&](const msg::PidConstantsConstPtr& x)
+        "pid_constants", 50, [&](const msg::PidConstantsConstPtr &x)
         { this->setPIDConstants(x->DoF, x->Kp, x->Ki, x->Kd, x->AcceptableError); });
 
     sub_pid_limits = nhc->subscribe<msg::PidLimits>(
-        "pid_limits", 50, [&](const msg::PidLimitsConstPtr& x)
+        "pid_limits", 50, [&](const msg::PidLimitsConstPtr &x)
         { this->setPIDLimits(x->DoF, x->OutputMin, x->OutputMax, x->IntegralMin, x->IntegralMax); });
 
     sub_target_point = nhc->subscribe<msg::TargetPoint>(
-        "target_point", 50, [&](const msg::TargetPointConstPtr& x)
+        "target_point", 50, [&](const msg::TargetPointConstPtr &x)
         { this->setTargetPoint(x->DoF, x->Target); });
 
     sub_thrust = nhc->subscribe<msg::Thrust>(
-        "thrust", 50, [&](const msg::ThrustConstPtr& x)
+        "thrust", 50, [&](const msg::ThrustConstPtr &x)
         { this->setThrust(x->DoF, x->Thrust); });
 }
 
