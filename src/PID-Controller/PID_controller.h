@@ -10,7 +10,7 @@ private:
     float current_value_,target_value_;
     float integral_max_,integral_min_;
     float output_max_,output_min_;
-    float error_,acceptable_error_;
+    float error_, prev_error_, acceptable_error_;
 
     std::chrono::high_resolution_clock pid_clock_;
     std::chrono::time_point< std::chrono::high_resolution_clock> prev_time_, current_time_;

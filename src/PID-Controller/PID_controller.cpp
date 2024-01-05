@@ -9,6 +9,7 @@ PIDController::PIDController()
     integral_min_ = output_min_ = std::numeric_limits<float>::min();
     integral_max_ = output_max_ = std::numeric_limits<float>::max();
     prev_time_ = current_time_ = pid_clock_.now();
+    error_ = prev_error_ = 0;
 }
 
 PIDController::~PIDController()
@@ -57,18 +58,13 @@ float PIDController::updateOutput()
     error_ = target_value_ - current_value_;
 
     if ((error_ >= 0) && (error_ <= acceptable_error_))
-    {
         error_ = 0;
-    }
     else if ((error_ < 0) && (error_ >= acceptable_error_))
-    {
         error_ = 0;
-    }
 
     p_ = Kp_ * error_;
 
     i_ = Ki_ * error_ * time_difference_;
-
     i_ = limitToRange(i_, integral_min_, integral_max_);
 
     if (reset_)
@@ -76,13 +72,13 @@ float PIDController::updateOutput()
         d_ = 0;
         reset_ = false;
     }
-    else
+    else if (error_ != 0)
     {
-        d_ = Kd_ * error_ / (time_difference_);
+        d_ = Kd_ * (error_ - prev_error_) / (time_difference_);
+        prev_error_ = error_;
     }
 
     output_ = p_ + i_ + d_;
-
     output_ = limitToRange(output_, output_min_, output_max_);
 
     return output_;
