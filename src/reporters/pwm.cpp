@@ -22,7 +22,7 @@ Thruster::Thruster(_1D::MonotonicInterpolator<float> &interp, float min_thrust, 
 
 int Thruster::compute_pwm(float thrust)
 {
-    float pwm = interpolater(std::max(-clamp, std::min(clamp, thrust)));
+    float pwm = interpolater(std::max(-clamp, std::min(clamp, thrust * clamp / config.spec.full_thrust))) - 0;
     return std::round(pwm);
 }
 

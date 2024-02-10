@@ -1,5 +1,6 @@
 #include "PID_controller.h"
 #include <limits>
+#include <iostream>
 #include <chrono>
 
 PIDController::PIDController()
@@ -74,7 +75,7 @@ float PIDController::updateOutput()
     }
     else if (error_ != 0)
     {
-        d_ = Kd_ * (error_ - prev_error_) / (time_difference_);
+        d_ = time_difference_ ? Kd_ * (error_ - prev_error_) / (time_difference_) : 0;
         prev_error_ = error_;
     }
 
