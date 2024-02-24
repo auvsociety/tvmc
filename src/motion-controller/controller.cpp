@@ -8,6 +8,9 @@ MotionController::MotionController(ros::NodeHandle *nhx)
     nh = nhx;
     ROS_INFO("Starting TVMC on %s.", nh->getNamespace().c_str());
 
+    // load thruster configuration
+    config = loadThrusterConfig();
+
     // initialize the thrust reporter
     ThrustReporter::init(nh);
 
@@ -21,9 +24,6 @@ MotionController::MotionController(ros::NodeHandle *nhx)
         controllers[d].setMinMaxLimits(-config.spec.min_thrust, config.spec.max_thrust, -config.spec.min_thrust / 2, config.spec.max_thrust / 2);
         thrust[d] = 0;
     }
-
-    // load thruster configuration
-    config = loadThrusterConfig();
 
     // set thruster maps for each degree of freedom
     thruster_map[msg::DoF::SURGE] = config.vectors.surge;

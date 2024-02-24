@@ -45,13 +45,11 @@ void PIDController::setCurrentValue(float current_value)
 
 void PIDController::setTargetValue(float target_value)
 {
-
     target_value_ = target_value;
 }
 
 float PIDController::updateOutput()
 {
-
     current_time_ = pid_clock_.now();
     time_difference_ = (float)std::chrono::duration_cast<std::chrono::milliseconds>(current_time_ - prev_time_).count();
     prev_time_ = current_time_;
@@ -75,7 +73,7 @@ float PIDController::updateOutput()
     }
     else if (error_ != 0)
     {
-        d_ = time_difference_ ? Kd_ * (error_ - prev_error_) / (time_difference_) : 0;
+        d_ = Kd_ * (error_ - prev_error_) / (time_difference_);
         prev_error_ = error_;
     }
 
