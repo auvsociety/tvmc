@@ -21,7 +21,7 @@ MotionController::MotionController(ros::NodeHandle *nhx)
     {
         control_modes[d] = OPEN_LOOP_MODE;
         controllers[d].setConstants(1, 1, 1, 0.001);
-        controllers[d].setMinMaxLimits(-config.spec.min_thrust, config.spec.max_thrust, -config.spec.min_thrust / 2, config.spec.max_thrust / 2);
+        controllers[d].setMinMaxLimits(config.spec.min_thrust, config.spec.max_thrust, config.spec.min_thrust / 2, config.spec.max_thrust / 2);
         thrust[d] = 0;
     }
 
