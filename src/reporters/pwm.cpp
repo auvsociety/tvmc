@@ -22,9 +22,22 @@ Thruster::Thruster(_1D::MonotonicInterpolator<float> &interp, float min_thrust, 
 
 int Thruster::compute_pwm(float thrust)
 {
-    return std::round(interpolater(clamp * thrust / config.spec.full_thrust));
-}
+    // clamp = min(max thrust on both sides)
+    // thrust = thrust as some unit/spec (usually percentage 0 - 100)
+    // full thrust = max of this unit/spec
 
+    // we first find normalized thrust from 0-1, (thrust / full thrust)
+    // and the multiply it by the clamp
+    // and then restrict this to max or min thrust that can be output by the thruster
+    // and then finally interpolate this to PWM 
+
+    return std::round(interpolater(
+        std::min(
+            std::max(
+                clamp * thrust / config.spec.full_thrust,
+                this->min_thrust),
+            this->max_thrust)));
+}
 
 // Updates the PWM values if there is need to do so
 void thrustCallback(const std_msgs::Float32MultiArray::ConstPtr &vec)
@@ -48,9 +61,9 @@ void thrustCallback(const std_msgs::Float32MultiArray::ConstPtr &vec)
     pub->publish(*msg);
 }
 
-
 // Zeroes all thrusters before shutting the node down.
-void handle_signint(int sig) {
+void handle_signint(int sig)
+{
     // zero thrusters
     for (int i = 0; i < config.spec.number_of_thrusters; i++)
         msg->data[i] = thrusters[i].compute_pwm(0);
@@ -61,7 +74,6 @@ void handle_signint(int sig) {
     // showdown node as usual
     ros::shutdown();
 }
-
 
 int main(int argc, char **argv)
 {
