@@ -25,6 +25,11 @@ MotionController::MotionController(ros::NodeHandle *nhx)
         thrust[d] = 0;
     }
 
+    // set PID controllers to angular mode for angles
+    controllers[msg::DoF::YAW].setAngular(true);
+    controllers[msg::DoF::PITCH].setAngular(true);
+    controllers[msg::DoF::ROLL].setAngular(true);
+
     // set thruster maps for each degree of freedom
     thruster_map[msg::DoF::SURGE] = config.vectors.surge;
     thruster_map[msg::DoF::SWAY] = config.vectors.sway;

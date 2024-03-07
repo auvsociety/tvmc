@@ -3,6 +3,8 @@
 #include <chrono>
 #include <thread>
 
+#define PID_ANGULAR_WRAPAROUND 360.0f
+
 class PIDController
 {
 private: 
@@ -15,11 +17,11 @@ private:
     std::chrono::high_resolution_clock pid_clock_;
     std::chrono::time_point< std::chrono::high_resolution_clock> prev_time_, current_time_;
 
-
     float time_difference_;
     float p_,i_,d_;
     float output_;
     bool reset_;
+    bool angular_;
     
     float limitToRange(float value, float minimum, float maximum);
 public:
@@ -28,6 +30,7 @@ public:
     PIDController();
     ~PIDController();
 
+    void setAngular(bool angular);
     void setConstants(float Kp, float Ki, float Kd,float acceptable_error);
     void setMinMaxLimits(float output_min, float output_max, float integral_min, float integral_max);
     void setCurrentValue(float current_value);

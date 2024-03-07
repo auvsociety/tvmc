@@ -2,6 +2,7 @@
 #include <limits>
 #include <iostream>
 #include <chrono>
+#include <math.h>
 
 PIDController::PIDController()
 {
@@ -48,13 +49,22 @@ void PIDController::setTargetValue(float target_value)
     target_value_ = target_value;
 }
 
+void PIDController::setAngular(bool angular)
+{
+    angular_ = angular;
+}
+
 float PIDController::updateOutput()
 {
     current_time_ = pid_clock_.now();
     time_difference_ = (float)std::chrono::duration_cast<std::chrono::milliseconds>(current_time_ - prev_time_).count();
     prev_time_ = current_time_;
 
-    error_ = target_value_ - current_value_;
+    // wrap around angles if required
+    if (angular_) {
+        error_ = std::fmod(target_value_ - current_value_, PID_ANGULAR_WRAPAROUND);
+        if (error_ > PID_ANGULAR_WRAPAROUND / 2) error_ -= PID_ANGULAR_WRAPAROUND;
+    } else error_ = target_value_ - current_value_;
 
     if ((error_ >= 0) && (error_ <= acceptable_error_))
         error_ = 0;
@@ -86,13 +96,13 @@ float PIDController::updateOutput()
 float PIDController::updateOutput(float current_value)
 {
     setCurrentValue(current_value);
-    updateOutput();
+    return updateOutput();
 }
 
 float PIDController::updateOutput(float current_value, float target_value)
 {
     setTargetValue(target_value);
-    updateOutput(current_value);
+    return updateOutput(current_value);
 }
 
 void PIDController::reset()
