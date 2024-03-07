@@ -63,8 +63,14 @@ float PIDController::updateOutput()
     // wrap around angles if required
     if (angular_) {
         error_ = std::fmod(target_value_ - current_value_, PID_ANGULAR_WRAPAROUND);
+        
+         // gomma fmod doesn't module negative properly
+        if (error_ < 0) error_ += PID_ANGULAR_WRAPAROUND;
+        
         if (error_ > PID_ANGULAR_WRAPAROUND / 2) error_ -= PID_ANGULAR_WRAPAROUND;
-    } else error_ = target_value_ - current_value_;
+    } 
+    
+    else error_ = target_value_ - current_value_;
 
     if ((error_ >= 0) && (error_ <= acceptable_error_))
         error_ = 0;
