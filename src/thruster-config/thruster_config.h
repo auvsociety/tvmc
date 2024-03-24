@@ -43,6 +43,7 @@ typedef struct ThrusterConfig
     ThrusterSpec spec;
     ThrustVectors vectors;
     std::map<std::string, PWMThrustMap> thrust_maps;
+    int pwm_offset;
 
 } ThrusterConfig;
 

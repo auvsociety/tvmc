@@ -43,6 +43,7 @@ ThrusterConfig loadThrusterConfig()
     config.spec.min_thrust = spec.at("minThrust");
     config.spec.max_thrust = spec.at("maxThrust");
     config.spec.full_thrust = spec.at("fullThrust");
+    config.pwm_offset = file.at("pwmOffset");
 
     // read thruster types
     for (auto &type: spec.at("thrustMaps").items())

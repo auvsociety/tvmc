@@ -36,7 +36,7 @@ int Thruster::compute_pwm(float thrust)
             std::max(
                 clamp * thrust / config.spec.full_thrust,
                 this->min_thrust),
-            this->max_thrust)));
+            this->max_thrust))) + config.pwm_offset;
 }
 
 // Updates the PWM values if there is need to do so
