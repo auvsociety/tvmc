@@ -74,7 +74,7 @@ float PIDController::updateOutput()
 
     if ((error_ >= 0) && (error_ <= acceptable_error_))
         error_ = 0;
-    else if ((error_ < 0) && (error_ >= acceptable_error_))
+    else if ((error_ < 0) && (error_ >= -acceptable_error_))
         error_ = 0;
 
     p_ = Kp_ * error_;

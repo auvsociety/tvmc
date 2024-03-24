@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
     // create publisher and subscriber
     pub = new ros::Publisher;
-    *pub = nh.advertise<std_msgs::Int32MultiArray>("/pwm_values", 50);
+    *pub = nh.advertise<std_msgs::Int32MultiArray>("/control/pwm", 50);
     ros::Subscriber sub = nh.subscribe<std_msgs::Float32MultiArray>("thrust", 1, thrustCallback);
 
     // register sigint handler
