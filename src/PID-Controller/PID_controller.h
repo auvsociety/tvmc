@@ -20,6 +20,7 @@ private:
     float time_difference_;
     float p_,i_,d_;
     float output_;
+    float min_left_, min_right_;
     bool reset_;
     bool angular_;
     

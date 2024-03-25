@@ -96,6 +96,8 @@ void MotionController::setControlMode(uint8_t dof, bool mode)
     // if the mode is set to closed loop mode, reset the PID Controller
     if (mode == CLOSED_LOOP_MODE)
         controllers[dof].reset();
+    else
+        MotionController::setThrust(dof, 0);
 }
 
 void MotionController::setPIDConstants(uint8_t dof, float kp, float ki, float kd, float acceptable_error)

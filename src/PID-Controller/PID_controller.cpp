@@ -3,6 +3,7 @@
 #include <iostream>
 #include <chrono>
 #include <math.h>
+#include <ros/console.h>
 
 PIDController::PIDController()
 {
@@ -76,6 +77,8 @@ float PIDController::updateOutput()
         error_ = 0;
     else if ((error_ < 0) && (error_ >= -acceptable_error_))
         error_ = 0;
+
+    ROS_INFO("Target: %f, Current: %f, PID Error: %f", target_value_, current_value_, error_);
 
     p_ = Kp_ * error_;
 
