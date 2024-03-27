@@ -67,7 +67,7 @@ MotionController::MotionController(ros::NodeHandle *nhx)
 
     sub_pid_constants = nhc->subscribe<msg::PidConstants>(
         "pid_constants", 50, [&](const msg::PidConstantsConstPtr &x)
-        { this->setPIDConstants(x->DoF, x->Kp, x->Ki, x->Kd, x->AcceptableError); });
+        { this->setPIDConstants(x->DoF, x->Kp, x->Ki, x->Kd, x->AcceptableError, x->Ko); });
 
     sub_pid_limits = nhc->subscribe<msg::PidLimits>(
         "pid_limits", 50, [&](const msg::PidLimitsConstPtr &x)
@@ -100,9 +100,9 @@ void MotionController::setControlMode(uint8_t dof, bool mode)
         MotionController::setThrust(dof, 0);
 }
 
-void MotionController::setPIDConstants(uint8_t dof, float kp, float ki, float kd, float acceptable_error)
+void MotionController::setPIDConstants(uint8_t dof, float kp, float ki, float kd, float acceptable_error, float ko)
 {
-    controllers[dof].setConstants(kp, ki, kd, acceptable_error);
+    controllers[dof].setConstants(kp, ki, kd, acceptable_error, ko);
 }
 
 void MotionController::setPIDLimits(uint8_t dof, float output_min, float output_max, float integral_min, float integral_max)

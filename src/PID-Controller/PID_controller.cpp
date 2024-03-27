@@ -3,11 +3,10 @@
 #include <iostream>
 #include <chrono>
 #include <math.h>
-#include <ros/console.h>
 
 PIDController::PIDController()
 {
-    Kp_ = Ki_ = Kd_ = 0;
+    Kp_ = Ki_ = Kd_ = Ko_ = 0;
     p_ = i_ = d_ = 0;
     integral_min_ = output_min_ = std::numeric_limits<float>::min();
     integral_max_ = output_max_ = std::numeric_limits<float>::max();
@@ -19,13 +18,14 @@ PIDController::~PIDController()
 {
 }
 
-void PIDController::setConstants(float Kp, float Ki, float Kd, float acceptable_error)
+void PIDController::setConstants(float Kp, float Ki, float Kd, float acceptable_error, float Ko)
 {
 
     Kp_ = Kp;
     Ki_ = Ki;
     Kd_ = Kd;
     acceptable_error_ = acceptable_error;
+    Ko_ = Ko;
     reset();
 }
 
@@ -62,23 +62,25 @@ float PIDController::updateOutput()
     prev_time_ = current_time_;
 
     // wrap around angles if required
-    if (angular_) {
+    if (angular_)
+    {
         error_ = std::fmod(target_value_ - current_value_, PID_ANGULAR_WRAPAROUND);
-        
-         // gomma fmod doesn't module negative properly
-        if (error_ < 0) error_ += PID_ANGULAR_WRAPAROUND;
-        
-        if (error_ > PID_ANGULAR_WRAPAROUND / 2) error_ -= PID_ANGULAR_WRAPAROUND;
-    } 
-    
-    else error_ = target_value_ - current_value_;
+
+        // gomma fmod doesn't module negative properly
+        if (error_ < 0)
+            error_ += PID_ANGULAR_WRAPAROUND;
+
+        if (error_ > PID_ANGULAR_WRAPAROUND / 2)
+            error_ -= PID_ANGULAR_WRAPAROUND;
+    }
+
+    else
+        error_ = target_value_ - current_value_;
 
     if ((error_ >= 0) && (error_ <= acceptable_error_))
         error_ = 0;
     else if ((error_ < 0) && (error_ >= -acceptable_error_))
         error_ = 0;
-
-    ROS_INFO("Target: %f, Current: %f, PID Error: %f", target_value_, current_value_, error_);
 
     p_ = Kp_ * error_;
 
@@ -96,7 +98,7 @@ float PIDController::updateOutput()
         prev_error_ = error_;
     }
 
-    output_ = p_ + i_ + d_;
+    output_ = p_ + i_ + d_ + Ko_;
     output_ = limitToRange(output_, output_min_, output_max_);
 
     return output_;

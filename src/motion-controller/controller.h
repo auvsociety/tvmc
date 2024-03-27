@@ -67,7 +67,7 @@ public:
      * @param kd Derivative Constant
      * @param acceptable_error Minimum error required for the controller to perform corrections.
     */
-    void setPIDConstants(uint8_t dof, float kp, float ki, float kd, float acceptable_error);
+    void setPIDConstants(uint8_t dof, float kp, float ki, float kd, float acceptable_error, float ko = 0);
 
     /**
      * Adjusts PID limits in each DoF
