@@ -11,7 +11,7 @@ This is a standalone package that is meant to be used as-is, and can controlled 
 
 ## Building and Running
 
-This depends on the [`rose_tvmc_msg`](https://github.com/weakit/rose-tvmc-msg) package, which contains required message files.    
+This depends on the [`rose_tvmc_msg`](https://github.com/auvsociety/tvmc-msg) package, which contains required message files.    
 Messages are provided separately in case you don't need the whole TVMC itself, but still want to interface with it in a separate package.    
 Just put that in a directory next to this in the workspace.
 
