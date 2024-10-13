@@ -31,12 +31,13 @@ int Thruster::compute_pwm(float thrust)
     // and then restrict this to max or min thrust that can be output by the thruster
     // and then finally interpolate this to PWM 
 
-    return std::round(interpolater(
+    /*return std::round(interpolater(
         std::min(
             std::max(
                 clamp * thrust / config.spec.full_thrust,
                 this->min_thrust),
-            this->max_thrust))) + config.pwm_offset;
+            this->max_thrust))) + config.pwm_offset;*/
+    return std::round(interpolater(clamp * thrust / config.spec.full_thrust));
 }
 
 // Updates the PWM values if there is need to do so
