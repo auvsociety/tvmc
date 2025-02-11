@@ -29,12 +29,14 @@ typedef struct ThrusterSpec
 
 typedef struct ThrustVectors
 {
-    std::vector<float> surge;
+    std::vector<float> surgeF;
+    std::vector<float> surgeB;
     std::vector<float> heave;
     std::vector<float> sway;
     std::vector<float> roll;
     std::vector<float> pitch;
-    std::vector<float> yaw;
+    std::vector<float> yawR;
+    std::vector<float> yawL;
 
 } ThrustVectors;
 
