@@ -17,8 +17,25 @@ Just put that in a directory next to this in the workspace.
 
 You will need to provide [`libInterpolate`](https://github.com/CD3/libInterpolate) to use this package.
 
-To install, clone the repository and build as directed [here](https://github.com/CD3/libInterpolate#cmake).   
+To install, clone the repository [you can clone it in the ```src``` folder of your workspace] and build as directed [here](https://github.com/CD3/libInterpolate#cmake).   
 `libInterpolate` itself depends on `boost` and `Eigen3`, which you will also need to install.
+
+### Installing Boost
+
+Just run the below command for installing `boost`:
+
+```bash
+$ sudo apt update
+$ sudo apt-get install libboost-all-dev
+```
+### Installing Eigen3
+
+Just run the below command for installing `Eigen3`:
+
+```bash
+$ sudo apt update
+$ sudo apt install libeigen3-dev 
+```
 
 Sometimes with the default `Eigen3` install, the include paths are not as expected by libInterpolate.   
 If this is the case, you should get an error similar to this:
@@ -43,6 +60,28 @@ $ sudo ln -sf eigen3/unsupported unsupported
 ```
 
 Then you should be good to ```catkin_make``` this.
+
+### Catch2 -> libInterpolate catkin_make error
+
+If you encounter this error, this means the catch2 package is not available in the default package repositories.
+To fix this: 
+
+```bash
+#You can clone it in the src folder of your workspace
+$ git clone https://github.com/catchorg/Catch2.git
+$ cd Catch2
+
+#build Catch2
+$ mkdir build
+$ cd build
+$ cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
+
+#Prefix sudo if Permission error occurs
+$ cmake --build . --target install
+```
+
+You should now be good to ```catkin_make```.
+
 
 ## Basic Overview
 
