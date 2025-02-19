@@ -50,15 +50,10 @@ ThrusterConfig loadThrusterConfig()
     config.spec.thruster_types.push_back(type.value().get<std::string>());
 
     // read thrustered vectors
-    config.vectors.surgeF = vectors.at("surgeF").get<std::vector<float>>();
-    config.vectors.surgeB = vectors.at("surgeB").get<std::vector<float>>();
-
+    config.vectors.surge = vectors.at("surge").get<std::vector<float>>();
     config.vectors.pitch = vectors.at("pitch").get<std::vector<float>>();
     config.vectors.roll = vectors.at("roll").get<std::vector<float>>();
-
-    config.vectors.yawR = vectors.at("yawR").get<std::vector<float>>();
-    config.vectors.yawL = vectors.at("yawL").get<std::vector<float>>();
-
+    config.vectors.yaw = vectors.at("yaw").get<std::vector<float>>();
     config.vectors.heave = vectors.at("heave").get<std::vector<float>>();
     config.vectors.sway = vectors.at("sway").get<std::vector<float>>();
 
