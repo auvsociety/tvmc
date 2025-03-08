@@ -72,11 +72,19 @@ float PIDController::updateOutput()
     if (angular_)
     {
         // error_ = std::fmod(target_value_ - current_value_, PID_ANGULAR_WRAPAROUND);
+        // error_ = std::fmod(target_value_ - current_value_, PID_ANGULAR_WRAPAROUND);
 
         // // gomma fmod doesn't module negative properly
         // if (error_ < 0)
         //     error_ += PID_ANGULAR_WRAPAROUND;
+        // // gomma fmod doesn't module negative properly
+        // if (error_ < 0)
+        //     error_ += PID_ANGULAR_WRAPAROUND;
 
+        // if (error_ > PID_ANGULAR_WRAPAROUND / 2)
+        //     error_ -= PID_ANGULAR_WRAPAROUND;
+
+        error_ = shortestAngularPath(target_value_, current_value_);
         // if (error_ > PID_ANGULAR_WRAPAROUND / 2)
         //     error_ -= PID_ANGULAR_WRAPAROUND;
 
