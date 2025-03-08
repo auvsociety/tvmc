@@ -55,6 +55,13 @@ void PIDController::setAngular(bool angular)
     angular_ = angular;
 }
 
+float PIDController::shortestAngularPath(float target, float current)
+{   
+    float value;
+    value = std::fmod(target - current + PID_ANGULAR_WRAPAROUND, PID_ANGULAR_WRAPAROUND);
+    if (value > PID_ANGULAR_WRAPAROUND/2.0) value -= PID_ANGULAR_WRAPAROUND;
+    return value;
+}
 float PIDController::updateOutput()
 {
     current_time_ = pid_clock_.now();
@@ -64,14 +71,16 @@ float PIDController::updateOutput()
     // wrap around angles if required
     if (angular_)
     {
-        error_ = std::fmod(target_value_ - current_value_, PID_ANGULAR_WRAPAROUND);
+        // error_ = std::fmod(target_value_ - current_value_, PID_ANGULAR_WRAPAROUND);
 
-        // gomma fmod doesn't module negative properly
-        if (error_ < 0)
-            error_ += PID_ANGULAR_WRAPAROUND;
+        // // gomma fmod doesn't module negative properly
+        // if (error_ < 0)
+        //     error_ += PID_ANGULAR_WRAPAROUND;
 
-        if (error_ > PID_ANGULAR_WRAPAROUND / 2)
-            error_ -= PID_ANGULAR_WRAPAROUND;
+        // if (error_ > PID_ANGULAR_WRAPAROUND / 2)
+        //     error_ -= PID_ANGULAR_WRAPAROUND;
+
+        error_ = shortestAngularPath(target_value_, current_value_);
     }
 
     else
@@ -84,7 +93,9 @@ float PIDController::updateOutput()
 
     p_ = Kp_ * error_;
 
-    i_ = Ki_ * error_ * time_difference_;
+    i_ += Ki_ * error_ * time_difference_;
+    
+
     i_ = limitToRange(i_, integral_min_, integral_max_);
 
     if (reset_)

@@ -55,6 +55,7 @@ public:
     void setCurrentValue(float current_value);
     void setTargetValue(float target_value);
 
+    float shortestAngularPath(float target, float current);
     float updateOutput();
     float updateOutput(float current_value);
     float updateOutput(float current_value, float target_value);
