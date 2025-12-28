@@ -77,9 +77,14 @@ MotionController::MotionController(ros::NodeHandle *nhx)
         "target_point", 50, [&](const msg::TargetPointConstPtr &x)
         { this->setTargetPoint(x->DoF, x->Target); });
 
-    sub_thrust = nhc->subscribe<msg::Thrust>(
-        "thrust", 50, [&](const msg::ThrustConstPtr &x)
-        { this->setThrust(x->DoF, x->Thrust); });
+    // sub_thrust = nhc->subscribe<msg::Thrust>(
+    //     "thrust", 50, [&](const msg::ThrustConstPtr &x)
+    //     { this->setThrust(x->DoF, x->Thrust); });
+
+    //new subscriber for multi thrust (which doesnt update immediately)
+    sub_multi_thrust = nhc->subscribe<msg::MultiThrust>(
+        "multi_thrust", 50, [&](const msg::MultiThrustConstPtr &x)
+        { this->setMultiThrust(x->surge, x->sway, x->heave, x->roll, x->pitch, x->yaw); });
 }
 
 MotionController::~MotionController()
@@ -97,7 +102,8 @@ void MotionController::setControlMode(uint8_t dof, bool mode)
     if (mode == CLOSED_LOOP_MODE)
         controllers[dof].reset();
     else
-        MotionController::setThrust(dof, 0);
+        // MotionController::setThrust(dof, 0);
+        thrust[dof] = 0;
 }
 
 void MotionController::setPIDConstants(uint8_t dof, float kp, float ki, float kd, float acceptable_error, float ko)
@@ -141,20 +147,36 @@ void MotionController::updateCurrentPoint(uint8_t dof, float current)
     MotionController::updateThrustValues();
 }
 
-void MotionController::setThrust(uint8_t dof, float tx)
+// void MotionController::setThrust(uint8_t dof, float tx)
+// {
+//     // ensure control mode is set to open loop for given DoF
+//     if (control_modes[dof] == CLOSED_LOOP_MODE)
+//     {
+//         ROS_ERROR("[DOF %d] %s", dof, "Error, closed loop control enabled, cannot set thrust manually.");
+//         return;
+//     }
+
+//     // manually set thrust value
+//     thrust[dof] = tx;
+
+//     // update thrust value on request
+//     MotionController::updateThrustValues();
+// }
+
+void MotionController::setMultiThrust(float surge, float sway, float heave, 
+                                       float roll, float pitch, float yaw)
 {
-    // ensure control mode is set to open loop for given DoF
-    if (control_modes[dof] == CLOSED_LOOP_MODE)
-    {
-        ROS_ERROR("[DOF %d] %s", dof, "Error, closed loop control enabled, cannot set thrust manually.");
-        return;
-    }
-
-    // manually set thrust value
-    thrust[dof] = tx;
-
-    // update thrust value on request
-    MotionController::updateThrustValues();
+    //set thrust values without calling update
+    //need to add the CLOSED_LOOP Error!
+    if (control_modes[msg::DoF::SURGE] == OPEN_LOOP_MODE) thrust[msg::DoF::SURGE] = surge;
+    if (control_modes[msg::DoF::SWAY] == OPEN_LOOP_MODE)  thrust[msg::DoF::SWAY] = sway;
+    if (control_modes[msg::DoF::HEAVE] == OPEN_LOOP_MODE) thrust[msg::DoF::HEAVE] = heave;
+    if (control_modes[msg::DoF::ROLL] == OPEN_LOOP_MODE)  thrust[msg::DoF::ROLL] = roll;
+    if (control_modes[msg::DoF::PITCH] == OPEN_LOOP_MODE) thrust[msg::DoF::PITCH] = pitch;
+    if (control_modes[msg::DoF::YAW] == OPEN_LOOP_MODE)   thrust[msg::DoF::YAW] = yaw;
+    
+    //update after all values are set
+    updateThrustValues();
 }
 
 void MotionController::resetAllThrusters()

@@ -12,7 +12,8 @@
 #include "rose_tvmc_msg/PidConstants.h"
 #include "rose_tvmc_msg/PidLimits.h"
 #include "rose_tvmc_msg/TargetPoint.h"
-#include "rose_tvmc_msg/Thrust.h"
+// #include "rose_tvmc_msg/Thrust.h" 
+#include "rose_tvmc_msg/MultiThrust.h"
 
 #define CLOSED_LOOP_MODE 0
 #define OPEN_LOOP_MODE 1
@@ -42,7 +43,8 @@ private:
     std::vector<float> thrust_vector;
 
     // Subscriber for Motion controller commands
-    ros::Subscriber sub_command, sub_control_mode, sub_current_point, sub_pid_constants, sub_pid_limits, sub_target_point, sub_thrust;
+    // ros::Subscriber sub_command, sub_control_mode, sub_current_point, sub_pid_constants, sub_pid_limits, sub_target_point, sub_thrust;
+    ros::Subscriber sub_command, sub_control_mode, sub_current_point, sub_pid_constants, sub_pid_limits, sub_target_point, sub_multi_thrust;
 
 public:
     bool online = true;
@@ -105,7 +107,8 @@ public:
      * @param dof The Degree of Freedom
      * @param thrust Thrust value
     */
-    void setThrust(uint8_t dof, float thrust);
+    // void setThrust(uint8_t dof, float thrust);
+    void setMultiThrust(float surge, float sway, float heave, float roll, float pitch, float yaw);
 
     /**
      * Resets all thrusters to zero
