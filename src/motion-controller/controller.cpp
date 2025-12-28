@@ -167,13 +167,48 @@ void MotionController::setMultiThrust(float surge, float sway, float heave,
                                        float roll, float pitch, float yaw)
 {
     //set thrust values without calling update
-    //need to add the CLOSED_LOOP Error!
-    if (control_modes[msg::DoF::SURGE] == OPEN_LOOP_MODE) thrust[msg::DoF::SURGE] = surge;
-    if (control_modes[msg::DoF::SWAY] == OPEN_LOOP_MODE)  thrust[msg::DoF::SWAY] = sway;
-    if (control_modes[msg::DoF::HEAVE] == OPEN_LOOP_MODE) thrust[msg::DoF::HEAVE] = heave;
-    if (control_modes[msg::DoF::ROLL] == OPEN_LOOP_MODE)  thrust[msg::DoF::ROLL] = roll;
-    if (control_modes[msg::DoF::PITCH] == OPEN_LOOP_MODE) thrust[msg::DoF::PITCH] = pitch;
-    if (control_modes[msg::DoF::YAW] == OPEN_LOOP_MODE)   thrust[msg::DoF::YAW] = yaw;
+    if(control_modes[msg::DoF::SURGE] == CLOSED_LOOP_MODE){
+        // ROS_ERROR("[DOF %d] %s", msg::DoF::SURGE, "Error, closed loop control enabled, cannot set thrust manually.");
+        //Do nothing here bro? - just pass
+    }else{
+        //open loop
+        thrust[msg::DoF::SURGE] = surge;
+    }
+
+    if(control_modes[msg::DoF::SWAY] == CLOSED_LOOP_MODE){
+        // ROS_ERROR("[DOF %d] %s", msg::DoF::SWAY, "Error, closed loop control enabled, cannot set thrust manually.");
+    }else{
+        //open loop
+        thrust[msg::DoF::SWAY] = sway;
+    }
+
+    if(control_modes[msg::DoF::HEAVE] == CLOSED_LOOP_MODE){
+        // ROS_ERROR("[DOF %d] %s", msg::DoF::HEAVE, "Error, closed loop control enabled, cannot set thrust manually.");
+    }else{
+        //open loop
+        thrust[msg::DoF::HEAVE] = heave;
+    }
+
+    if(control_modes[msg::DoF::ROLL] == CLOSED_LOOP_MODE){
+        // ROS_ERROR("[DOF %d] %s", msg::DoF::ROLL, "Error, closed loop control enabled, cannot set thrust manually.");
+    }else{
+        //open loop
+        thrust[msg::DoF::ROLL] = roll;
+    }
+
+    if(control_modes[msg::DoF::PITCH] == CLOSED_LOOP_MODE){
+        // ROS_ERROR("[DOF %d] %s", msg::DoF::PITCH, "Error, closed loop control enabled, cannot set thrust manually.");
+    }else{
+        //open loop
+        thrust[msg::DoF::PITCH] = pitch;
+    }
+
+    if(control_modes[msg::DoF::YAW] == CLOSED_LOOP_MODE){
+        // ROS_ERROR("[DOF %d] %s", msg::DoF::YAW, "Error, closed loop control enabled, cannot set thrust manually.");
+    }else{
+        //open loop
+        thrust[msg::DoF::YAW] = yaw;
+    }
     
     //update after all values are set
     updateThrustValues();
