@@ -38,6 +38,11 @@ set_target_properties(bibi_sync PROPERTIES
 )
 
 # ============================================
+# Python3 (required because bibi_sync has PyO3 bindings)
+# ============================================
+find_package(Python3 COMPONENTS Development REQUIRED)
+
+# ============================================
 # libInterpolate (for PWM conversion)
 # ============================================
 find_package(libInterpolate REQUIRED)
@@ -71,6 +76,7 @@ target_include_directories(tvmc PRIVATE
 target_link_libraries(tvmc PRIVATE
     bibi_sync
     thruster_config
+    Python3::Python
     pthread
 )
 
@@ -90,6 +96,7 @@ target_link_libraries(pwmc PRIVATE
     bibi_sync
     thruster_config
     libInterpolate::Interpolate
+    Python3::Python
     pthread
 )
 
