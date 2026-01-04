@@ -2,15 +2,55 @@
 #include <fstream>
 #include "json.hpp"
 #include "csv.h"
-#include <ros/package.h>
-#include <ros/console.h>
+#include <cstdlib>
+#include <iostream>
+#include <filesystem>
 
 using json = nlohmann::json;
 
+// Get the config directory path
+static std::string getConfigPath() {
+    // First check environment variable
+    const char* config_dir = std::getenv("TVMC_CONFIG_DIR");
+    if (config_dir) {
+        return std::string(config_dir);
+    }
+    
+    // Try relative path from executable
+    std::filesystem::path exe_path = std::filesystem::current_path();
+    
+    // Check various possible locations
+    std::vector<std::string> paths = {
+        "./config",
+        "../config",
+        "../../config",
+        "/ros-ws/src/tvmc/config",
+        exe_path.string() + "/config"
+    };
+    
+    for (const auto& p : paths) {
+        if (std::filesystem::exists(p + "/config.json")) {
+            return p;
+        }
+    }
+    
+    std::cerr << "[ThrusterConfig] ERROR: Could not find config directory" << std::endl;
+    std::cerr << "[ThrusterConfig] Set TVMC_CONFIG_DIR environment variable" << std::endl;
+    exit(1);
+}
+
 ThrusterConfig loadThrusterConfig()
 {
-    std::string path = ros::package::getPath("rose_tvmc") + "/config/config.json";
+    std::string config_dir = getConfigPath();
+    std::string path = config_dir + "/config.json";
     std::ifstream f(path);
+    
+    if (!f.is_open()) {
+        std::cerr << "[ThrusterConfig] ERROR: Cannot open config file: " << path << std::endl;
+        exit(1);
+    }
+
+    std::cout << "[ThrusterConfig] Loading config from: " << path << std::endl;
 
     ThrusterConfig config;
 
@@ -18,19 +58,19 @@ ThrusterConfig loadThrusterConfig()
 
     if (!file.contains("thrusterSpec"))
     {
-        ROS_ERROR("Unable to find thruster spec.");
+        std::cerr << "[ThrusterConfig] ERROR: Unable to find thruster spec." << std::endl;
         exit(1);
     }
 
     if (!file.contains("thrustVectors"))
     {
-        ROS_ERROR("Unable to find thrust vectors.");
+        std::cerr << "[ThrusterConfig] ERROR: Unable to find thrust vectors." << std::endl;
         exit(1);
     }
 
     if (!file.contains("pwmThrustMaps"))
     {
-        ROS_ERROR("Unable to find thrust maps.");
+        std::cerr << "[ThrusterConfig] ERROR: Unable to find thrust maps." << std::endl;
         exit(1);
     }
 
@@ -62,7 +102,7 @@ ThrusterConfig loadThrusterConfig()
     {
         PWMThrustMap m;
 
-        std::string tmpath = ros::package::getPath("rose_tvmc") + "/config/" + map.value().get<std::string>();
+        std::string tmpath = config_dir + "/" + map.value().get<std::string>();
         io::CSVReader<2> csv(tmpath);
         int pwm;
         float thrust;
@@ -75,6 +115,9 @@ ThrusterConfig loadThrusterConfig()
 
         config.thrust_maps[map.key()] = m;
     }
+
+    std::cout << "[ThrusterConfig] Loaded " << config.spec.number_of_thrusters 
+              << " thrusters" << std::endl;
 
     return config;
 }

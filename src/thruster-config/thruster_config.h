@@ -3,8 +3,8 @@
 
 #include <map>
 #include <vector>
-#include <chrono>
-#include <ros/console.h>
+#include <string>
+#include <iostream>
 
 typedef struct PWMThrustMap {
     std::vector<float> thrust;
@@ -19,12 +19,6 @@ typedef struct ThrusterSpec
     int full_thrust;
 
     std::vector<std::string> thruster_types;
-
-    // int zero_thrust_pwm;
-    // int min_pwm;
-    // int max_pwm;
-    // std::vector<float> thrust_map_thrust;
-    // std::vector<int> thrust_map_pwm;
 } ThrusterSpec;
 
 typedef struct ThrustVectors
