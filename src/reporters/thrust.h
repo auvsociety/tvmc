@@ -1,15 +1,23 @@
+/**
+ * Thrust Reporter - BiBi-Sync Version
+ * Publishes thrust values via BiBi-Sync topics
+ */
+
 #ifndef THRUST_REPORTER_H
 #define THRUST_REPORTER_H
-#include <ros/ros.h>
+
+extern "C" {
+#include "bibi_sync.h"
+}
 
 #define THRUST_REPORT_RATE_US 100000
 
 namespace ThrustReporter
 {
     /**
-     *  Initializes the Thruster Control Node
-    */
-    void init(ros::NodeHandle *nh);
+     *  Initializes the Thrust Reporter with BiBi-Sync registry
+     */
+    void init(BibiRegistry* registry);
     
     /**
      * Reports the corresponding thrust values for the provided thrust vector.
@@ -19,15 +27,12 @@ namespace ThrustReporter
     void report(float* thrust_vector);
 
     /**
-     * Kills the Thruster Control Node
+     * Kills the Thrust Reporter
     */
     void kill();
 
-    // for backwards-compatibility
-
     /**
      * Force re-publishes the thrust values.
-     * You shouldn't have to do this normally, it should be done on its own.
     */
     void refresh();
 
@@ -40,8 +45,6 @@ namespace ThrustReporter
     /**
      * Alias for report()
      * Provided for backwards-compatibility with ThrusterController.
-     * 
-     * Reports the corresponding PWM values for the provided thrust vector.
      * 
      * @param thrust_vector List of float values representing the thrust of each thruster.
     */

@@ -1,18 +1,22 @@
+/**
+ * TVMC Motion Controller - BiBi-Sync Version
+ * Replaces ROS topics with BiBi-Sync topics
+ */
+
 #include <iostream>
+#include <chrono>
 #include "controller.h"
 
-namespace msg = rose_tvmc_msg;
-
-MotionController::MotionController(ros::NodeHandle *nhx)
+MotionController::MotionController()
 {
-    nh = nhx;
-    ROS_INFO("Starting TVMC on %s.", nh->getNamespace().c_str());
+    std::cout << "[TVMC] Starting BiBi-Sync Motion Controller" << std::endl;
+    running = false;
 
     // load thruster configuration
     config = loadThrusterConfig();
 
-    // initialize the thrust reporter
-    ThrustReporter::init(nh);
+    // initialize the thrust reporter with our registry
+    ThrustReporter::init(bridge.get_registry());
 
     // initialize all controllers,
     // have everything in open loop mode in the beginning.
@@ -21,76 +25,150 @@ MotionController::MotionController(ros::NodeHandle *nhx)
     {
         control_modes[d] = OPEN_LOOP_MODE;
         controllers[d].setConstants(1, 1, 1, 0.001);
-        controllers[d].setMinMaxLimits(config.spec.min_thrust, config.spec.max_thrust, config.spec.min_thrust / 2, config.spec.max_thrust / 2);
+        controllers[d].setMinMaxLimits(config.spec.min_thrust, config.spec.max_thrust, 
+                                       config.spec.min_thrust / 2, config.spec.max_thrust / 2);
         thrust[d] = 0;
     }
 
     // set PID controllers to angular mode for angles
-    controllers[msg::DoF::YAW].setAngular(true);
-    controllers[msg::DoF::PITCH].setAngular(true);
-    controllers[msg::DoF::ROLL].setAngular(true);
+    controllers[DoF::YAW].setAngular(true);
+    controllers[DoF::PITCH].setAngular(true);
+    controllers[DoF::ROLL].setAngular(true);
 
     // set thruster maps for each degree of freedom
-    thruster_map[msg::DoF::SURGE] = config.vectors.surge;
-    thruster_map[msg::DoF::SWAY] = config.vectors.sway;
-    thruster_map[msg::DoF::HEAVE] = config.vectors.heave;
-    thruster_map[msg::DoF::YAW] = config.vectors.yaw;
-    thruster_map[msg::DoF::PITCH] = config.vectors.pitch;
-    thruster_map[msg::DoF::ROLL] = config.vectors.roll;
+    thruster_map[DoF::SURGE] = config.vectors.surge;
+    thruster_map[DoF::SWAY] = config.vectors.sway;
+    thruster_map[DoF::HEAVE] = config.vectors.heave;
+    thruster_map[DoF::YAW] = config.vectors.yaw;
+    thruster_map[DoF::PITCH] = config.vectors.pitch;
+    thruster_map[DoF::ROLL] = config.vectors.roll;
 
     // initialize thrust vector to 0
     for (int i = 0; i < config.spec.number_of_thrusters; i++)
         thrust_vector.push_back(0);
 
-    // setup subcribers
-    nhc = new ros::NodeHandle(*nh, "control");
+    // Create BiBi-Sync topics for receiving commands
+    topic_command = new bibi::Topic(bridge.get_registry(), bibi::topics::COMMAND, 16);
+    topic_control_mode = new bibi::Topic(bridge.get_registry(), bibi::topics::CONTROL_MODE, 16);
+    topic_current_point = new bibi::Topic(bridge.get_registry(), bibi::topics::CURRENT_POINT, 16);
+    topic_target_point = new bibi::Topic(bridge.get_registry(), bibi::topics::TARGET_POINT, 16);
+    topic_pid_constants = new bibi::Topic(bridge.get_registry(), bibi::topics::PID_CONSTANTS, 16);
+    topic_pid_limits = new bibi::Topic(bridge.get_registry(), bibi::topics::PID_LIMITS, 16);
+    topic_multi_thrust = new bibi::Topic(bridge.get_registry(), bibi::topics::MULTI_THRUST, 16);
 
-    sub_command = nhc->subscribe<msg::Command>(
-        "command", 50,
-        [&](const msg::CommandConstPtr &x)
-        {
-            if (x->Command == x->REFRESH)
-                this->refresh();
-            if (x->Command == x->RESET_THRUSTERS)
-                this->resetAllThrusters();
-            if (x->Command == x->SHUT_DOWN)
-                this->online = false;
-        });
-
-    sub_control_mode = nhc->subscribe<msg::ControlMode>(
-        "control_mode", 50, [&](const msg::ControlModeConstPtr &x)
-        { this->setControlMode(x->DoF, x->Mode); });
-
-    sub_current_point = nhc->subscribe<msg::CurrentPoint>(
-        "current_point", 50, [&](const msg::CurrentPointConstPtr &x)
-        { this->updateCurrentPoint(x->DoF, x->Current); });
-
-    sub_pid_constants = nhc->subscribe<msg::PidConstants>(
-        "pid_constants", 50, [&](const msg::PidConstantsConstPtr &x)
-        { this->setPIDConstants(x->DoF, x->Kp, x->Ki, x->Kd, x->AcceptableError, x->Ko); });
-
-    sub_pid_limits = nhc->subscribe<msg::PidLimits>(
-        "pid_limits", 50, [&](const msg::PidLimitsConstPtr &x)
-        { this->setPIDLimits(x->DoF, x->OutputMin, x->OutputMax, x->IntegralMin, x->IntegralMax); });
-
-    sub_target_point = nhc->subscribe<msg::TargetPoint>(
-        "target_point", 50, [&](const msg::TargetPointConstPtr &x)
-        { this->setTargetPoint(x->DoF, x->Target); });
-
-    // sub_thrust = nhc->subscribe<msg::Thrust>(
-    //     "thrust", 50, [&](const msg::ThrustConstPtr &x)
-    //     { this->setThrust(x->DoF, x->Thrust); });
-
-    //new subscriber for multi thrust (which doesnt update immediately)
-    sub_multi_thrust = nhc->subscribe<msg::MultiThrust>(
-        "multi_thrust", 50, [&](const msg::MultiThrustConstPtr &x)
-        { this->setMultiThrust(x->surge, x->sway, x->heave, x->roll, x->pitch, x->yaw); });
+    std::cout << "[TVMC] Initialized, topics ready" << std::endl;
 }
 
 MotionController::~MotionController()
 {
+    stop();
     ThrustReporter::shutdown();
-    ROS_INFO("Shutting down TVMC on %s", nh->getNamespace().c_str());
+    
+    delete topic_command;
+    delete topic_control_mode;
+    delete topic_current_point;
+    delete topic_target_point;
+    delete topic_pid_constants;
+    delete topic_pid_limits;
+    delete topic_multi_thrust;
+    
+    std::cout << "[TVMC] Shutting down" << std::endl;
+}
+
+void MotionController::start()
+{
+    if (running) return;
+    
+    running = true;
+    poll_thread = std::thread(&MotionController::pollMessages, this);
+    std::cout << "[TVMC] Started polling thread" << std::endl;
+}
+
+void MotionController::stop()
+{
+    if (!running) return;
+    
+    running = false;
+    online = false;
+    if (poll_thread.joinable()) {
+        poll_thread.join();
+    }
+    std::cout << "[TVMC] Stopped polling thread" << std::endl;
+}
+
+void MotionController::pollMessages()
+{
+    while (running && online)
+    {
+        processMessages();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 100Hz polling
+    }
+}
+
+void MotionController::processMessages()
+{
+    // Process command messages
+    if (topic_command->has_new()) {
+        bibi::CommandMsg cmd;
+        if (topic_command->receive(&cmd)) {
+            if (cmd.command == Cmd::REFRESH)
+                this->refresh();
+            if (cmd.command == Cmd::RESET_THRUSTERS)
+                this->resetAllThrusters();
+            if (cmd.command == Cmd::SHUT_DOWN)
+                this->online = false;
+        }
+    }
+    
+    // Process control mode changes
+    while (topic_control_mode->has_new()) {
+        bibi::ControlModeMsg mode;
+        if (topic_control_mode->receive(&mode)) {
+            this->setControlMode(mode.dof, mode.mode);
+        }
+    }
+    
+    // Process current point updates
+    while (topic_current_point->has_new()) {
+        bibi::CurrentPointMsg point;
+        if (topic_current_point->receive(&point)) {
+            this->updateCurrentPoint(point.dof, point.current);
+        }
+    }
+
+    // Process target point updates
+    while (topic_target_point->has_new()) {
+        bibi::TargetPointMsg point;
+        if (topic_target_point->receive(&point)) {
+            this->setTargetPoint(point.dof, point.target);
+        }
+    }
+    
+    // Process PID constants updates
+    while (topic_pid_constants->has_new()) {
+        bibi::PidConstantsMsg constants;
+        if (topic_pid_constants->receive(&constants)) {
+            this->setPIDConstants(constants.dof, constants.kp, constants.ki, 
+                                  constants.kd, constants.acceptable_error, constants.ko);
+        }
+    }
+    
+    // Process PID limits updates
+    while (topic_pid_limits->has_new()) {
+        bibi::PidLimitsMsg limits;
+        if (topic_pid_limits->receive(&limits)) {
+            this->setPIDLimits(limits.dof, limits.output_min, limits.output_max,
+                              limits.integral_min, limits.integral_max);
+        }
+    }
+    
+    // Process multi-thrust commands
+    while (topic_multi_thrust->has_new()) {
+        bibi::MultiThrustMsg mt;
+        if (topic_multi_thrust->receive(&mt)) {
+            this->setMultiThrust(mt.surge, mt.sway, mt.heave, mt.roll, mt.pitch, mt.yaw);
+        }
+    }
 }
 
 void MotionController::setControlMode(uint8_t dof, bool mode)
@@ -102,7 +180,6 @@ void MotionController::setControlMode(uint8_t dof, bool mode)
     if (mode == CLOSED_LOOP_MODE)
         controllers[dof].reset();
     else
-        // MotionController::setThrust(dof, 0);
         thrust[dof] = 0;
 }
 
@@ -129,7 +206,7 @@ void MotionController::setTargetPoint(uint8_t dof, float target)
 
     // update thrust values on request
     if (control_modes[dof] == CLOSED_LOOP_MODE)
-    MotionController::updateThrustValues();
+        MotionController::updateThrustValues();
 }
 
 void MotionController::updateCurrentPoint(uint8_t dof, float current)
@@ -147,70 +224,35 @@ void MotionController::updateCurrentPoint(uint8_t dof, float current)
     MotionController::updateThrustValues();
 }
 
-// void MotionController::setThrust(uint8_t dof, float tx)
-// {
-//     // ensure control mode is set to open loop for given DoF
-//     if (control_modes[dof] == CLOSED_LOOP_MODE)
-//     {
-//         ROS_ERROR("[DOF %d] %s", dof, "Error, closed loop control enabled, cannot set thrust manually.");
-//         return;
-//     }
-
-//     // manually set thrust value
-//     thrust[dof] = tx;
-
-//     // update thrust value on request
-//     MotionController::updateThrustValues();
-// }
-
 void MotionController::setMultiThrust(float surge, float sway, float heave, 
                                        float roll, float pitch, float yaw)
 {
-    //set thrust values without calling update
-    if(control_modes[msg::DoF::SURGE] == CLOSED_LOOP_MODE){
-        // ROS_ERROR("[DOF %d] %s", msg::DoF::SURGE, "Error, closed loop control enabled, cannot set thrust manually.");
-        //Do nothing here bro? - just pass
-    }else{
-        //open loop
-        thrust[msg::DoF::SURGE] = surge;
+    // set thrust values without calling update
+    if (control_modes[DoF::SURGE] != CLOSED_LOOP_MODE) {
+        thrust[DoF::SURGE] = surge;
     }
 
-    if(control_modes[msg::DoF::SWAY] == CLOSED_LOOP_MODE){
-        // ROS_ERROR("[DOF %d] %s", msg::DoF::SWAY, "Error, closed loop control enabled, cannot set thrust manually.");
-    }else{
-        //open loop
-        thrust[msg::DoF::SWAY] = sway;
+    if (control_modes[DoF::SWAY] != CLOSED_LOOP_MODE) {
+        thrust[DoF::SWAY] = sway;
     }
 
-    if(control_modes[msg::DoF::HEAVE] == CLOSED_LOOP_MODE){
-        // ROS_ERROR("[DOF %d] %s", msg::DoF::HEAVE, "Error, closed loop control enabled, cannot set thrust manually.");
-    }else{
-        //open loop
-        thrust[msg::DoF::HEAVE] = heave;
+    if (control_modes[DoF::HEAVE] != CLOSED_LOOP_MODE) {
+        thrust[DoF::HEAVE] = heave;
     }
 
-    if(control_modes[msg::DoF::ROLL] == CLOSED_LOOP_MODE){
-        // ROS_ERROR("[DOF %d] %s", msg::DoF::ROLL, "Error, closed loop control enabled, cannot set thrust manually.");
-    }else{
-        //open loop
-        thrust[msg::DoF::ROLL] = roll;
+    if (control_modes[DoF::ROLL] != CLOSED_LOOP_MODE) {
+        thrust[DoF::ROLL] = roll;
     }
 
-    if(control_modes[msg::DoF::PITCH] == CLOSED_LOOP_MODE){
-        // ROS_ERROR("[DOF %d] %s", msg::DoF::PITCH, "Error, closed loop control enabled, cannot set thrust manually.");
-    }else{
-        //open loop
-        thrust[msg::DoF::PITCH] = pitch;
+    if (control_modes[DoF::PITCH] != CLOSED_LOOP_MODE) {
+        thrust[DoF::PITCH] = pitch;
     }
 
-    if(control_modes[msg::DoF::YAW] == CLOSED_LOOP_MODE){
-        // ROS_ERROR("[DOF %d] %s", msg::DoF::YAW, "Error, closed loop control enabled, cannot set thrust manually.");
-    }else{
-        //open loop
-        thrust[msg::DoF::YAW] = yaw;
+    if (control_modes[DoF::YAW] != CLOSED_LOOP_MODE) {
+        thrust[DoF::YAW] = yaw;
     }
     
-    //update after all values are set
+    // update after all values are set
     updateThrustValues();
 }
 
@@ -220,6 +262,7 @@ void MotionController::resetAllThrusters()
     // will reset all the thrusters at next update
     for (int d = 0; d < 6; d++)
         thrust[d] = 0;
+    updateThrustValues();
 }
 
 void MotionController::refresh()
@@ -260,25 +303,21 @@ float MotionController::limitToRange(float value, float minimum, float maximum)
 
 int main(int argc, char **argv)
 {
-    // initialize ros node stuff
-    ros::init(argc, argv, "rose_tvmc");
-    ros::NodeHandle nh("rose_tvmc");
-    ros::Rate rate(1);
-
+    std::cout << "[TVMC] BiBi-Sync Motion Controller starting..." << std::endl;
+    
     // make a motion controller instance
-    auto m = new MotionController(&nh);
+    auto m = new MotionController();
+    m->start();
 
-    // keep the main loop running as long as ros is okay
-    // spin once a second chumma because why not
-    while (ros::ok() && m->online)
+    // keep the main loop running
+    while (m->online)
     {
-        rate.sleep();
-        ros::spinOnce();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    // shut down the motion controller and thrust reporter
+    // shut down the motion controller
     delete m;
 
-    // good-bye :)
+    std::cout << "[TVMC] Goodbye :)" << std::endl;
     return 0;
 }
