@@ -118,6 +118,7 @@ void MotionController::processMessages()
             if (cmd.command == Cmd::SHUT_DOWN)
                 this->online = false;
         }
+        topic_command->mark_seen();
     }
     
     // Process control mode changes
@@ -126,6 +127,7 @@ void MotionController::processMessages()
         if (topic_control_mode->receive(&mode)) {
             this->setControlMode(mode.dof, mode.mode);
         }
+        topic_control_mode->mark_seen();
     }
     
     // Process current point updates
@@ -134,6 +136,7 @@ void MotionController::processMessages()
         if (topic_current_point->receive(&point)) {
             this->updateCurrentPoint(point.dof, point.current);
         }
+        topic_current_point->mark_seen();
     }
 
     // Process target point updates
@@ -142,6 +145,7 @@ void MotionController::processMessages()
         if (topic_target_point->receive(&point)) {
             this->setTargetPoint(point.dof, point.target);
         }
+        topic_target_point->mark_seen();
     }
     
     // Process PID constants updates
@@ -151,6 +155,7 @@ void MotionController::processMessages()
             this->setPIDConstants(constants.dof, constants.kp, constants.ki, 
                                   constants.kd, constants.acceptable_error, constants.ko);
         }
+        topic_pid_constants->mark_seen();
     }
     
     // Process PID limits updates
@@ -160,6 +165,7 @@ void MotionController::processMessages()
             this->setPIDLimits(limits.dof, limits.output_min, limits.output_max,
                               limits.integral_min, limits.integral_max);
         }
+        topic_pid_limits->mark_seen();
     }
     
     // Process multi-thrust commands
@@ -168,6 +174,7 @@ void MotionController::processMessages()
         if (topic_multi_thrust->receive(&mt)) {
             this->setMultiThrust(mt.surge, mt.sway, mt.heave, mt.roll, mt.pitch, mt.yaw);
         }
+        topic_multi_thrust->mark_seen();
     }
 }
 

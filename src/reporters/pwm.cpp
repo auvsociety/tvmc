@@ -23,6 +23,7 @@ static float* thrust_vector = nullptr;
 static int32_t* pwm_vector = nullptr;
 static std::atomic<bool> running(false);
 static BibiRegistry* g_registry = nullptr;
+static uint64_t last_epoch = 0;
 
 Thruster::Thruster(_1D::MonotonicInterpolator<float> &interp, float min_thrust, float max_thrust) : interpolater(interp)
 {
@@ -33,15 +34,6 @@ Thruster::Thruster(_1D::MonotonicInterpolator<float> &interp, float min_thrust, 
 
 int Thruster::compute_pwm(float thrust)
 {
-    // clamp = min(max thrust on both sides)
-    // thrust = thrust as some unit/spec (usually percentage 0 - 100)
-    // full thrust = max of this unit/spec
-
-    // we first find normalized thrust from 0-1, (thrust / full thrust)
-    // and the multiply it by the clamp
-    // and then restrict this to max or min thrust that can be output by the thruster
-    // and then finally interpolate this to PWM 
-
     return std::round(interpolater(
         std::min(
             std::max(
@@ -138,38 +130,25 @@ void PWMReporter::run()
     
     while (running)
     {
-        // Check for new thrust values
-        if (bibi_byte_topic_has_new(thrust_topic)) {
-            size_t actual_len;
-            uint64_t epoch;
+        // Check for new thrust values using epoch comparison
+        uint64_t current_epoch = bibi_byte_topic_latest_epoch(thrust_topic);
+        if (current_epoch > last_epoch) {
+            uintptr_t out_len = 0;
             
-            if (bibi_byte_topic_receive(thrust_topic, reinterpret_cast<uint8_t*>(thrust_vector),
-                                        config.spec.number_of_thrusters * sizeof(float),
-                                        &actual_len, &epoch) == 0) 
+            if (bibi_byte_topic_try_receive(thrust_topic, reinterpret_cast<uint8_t*>(thrust_vector),
+                                             &out_len,
+                                             config.spec.number_of_thrusters * sizeof(float)) == 0) 
             {
-                bool change = false;
-                static float last_thrust[6] = {0};
+                last_epoch = current_epoch;
                 
-                // Check if there's any change
-                for (int i = 0; i < config.spec.number_of_thrusters && !change; i++) {
-                    if (thrust_vector[i] != last_thrust[i]) {
-                        change = true;
-                    }
+                // Compute PWM values
+                for (int i = 0; i < config.spec.number_of_thrusters; i++) {
+                    pwm_vector[i] = thrusters[i].compute_pwm(thrust_vector[i]);
                 }
                 
-                if (change) {
-                    // Update last thrust
-                    std::memcpy(last_thrust, thrust_vector, config.spec.number_of_thrusters * sizeof(float));
-                    
-                    // Compute PWM values
-                    for (int i = 0; i < config.spec.number_of_thrusters; i++) {
-                        pwm_vector[i] = thrusters[i].compute_pwm(thrust_vector[i]);
-                    }
-                    
-                    // Publish PWM values
-                    bibi_byte_topic_publish(pwm_topic, reinterpret_cast<uint8_t*>(pwm_vector),
-                                            config.spec.number_of_thrusters * sizeof(int32_t));
-                }
+                // Publish PWM values
+                bibi_byte_topic_publish(pwm_topic, reinterpret_cast<uint8_t*>(pwm_vector),
+                                        config.spec.number_of_thrusters * sizeof(int32_t));
             }
         }
         

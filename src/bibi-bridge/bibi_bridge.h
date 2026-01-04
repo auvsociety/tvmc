@@ -114,10 +114,12 @@ struct DepthMsg {
 class Topic {
 private:
     BibiByteTopic* topic;
+    uint64_t last_epoch;
     
 public:
     Topic(BibiRegistry* registry, const char* name, size_t capacity = 32) {
         topic = bibi_registry_get_byte_topic(registry, name, capacity);
+        last_epoch = 0;
     }
     
     ~Topic() {
@@ -137,48 +139,66 @@ public:
         publish(&msg, sizeof(T));
     }
     
-    bool receive(void* data, size_t max_len, size_t* actual_len, uint64_t* epoch) {
+    // Try to receive a message (uses try_receive FFI)
+    bool receive(void* data, size_t max_len, size_t* actual_len) {
         if (!topic) return false;
-        return bibi_byte_topic_receive(topic, static_cast<uint8_t*>(data), 
-                                       max_len, actual_len, epoch) == 0;
+        uintptr_t out_len = 0;
+        int32_t result = bibi_byte_topic_try_receive(topic, static_cast<uint8_t*>(data), 
+                                                      &out_len, max_len);
+        if (result == 0 && actual_len) {
+            *actual_len = static_cast<size_t>(out_len);
+        }
+        return result == 0;
     }
     
     template<typename T>
-    bool receive(T* msg, uint64_t* epoch = nullptr) {
+    bool receive(T* msg) {
         size_t actual_len;
-        uint64_t ep;
-        if (receive(msg, sizeof(T), &actual_len, &ep)) {
-            if (epoch) *epoch = ep;
-            return actual_len >= sizeof(T);
-        }
-        return false;
+        return receive(msg, sizeof(T), &actual_len) && actual_len >= sizeof(T);
     }
     
+    // Peek at latest message without consuming
     bool peek_latest(void* data, size_t max_len, size_t* actual_len, uint64_t* epoch) {
         if (!topic) return false;
-        return bibi_byte_topic_peek_latest(topic, static_cast<uint8_t*>(data),
-                                           max_len, actual_len, epoch) == 0;
+        uintptr_t out_len = 0;
+        uint64_t out_epoch = 0;
+        int32_t result = bibi_byte_topic_peek_latest(topic, static_cast<uint8_t*>(data),
+                                                      &out_len, &out_epoch, max_len);
+        if (result == 0) {
+            if (actual_len) *actual_len = static_cast<size_t>(out_len);
+            if (epoch) *epoch = out_epoch;
+        }
+        return result == 0;
     }
     
     template<typename T>
     bool peek_latest(T* msg, uint64_t* epoch = nullptr) {
         size_t actual_len;
-        uint64_t ep;
-        if (peek_latest(msg, sizeof(T), &actual_len, &ep)) {
-            if (epoch) *epoch = ep;
-            return actual_len >= sizeof(T);
-        }
-        return false;
+        return peek_latest(msg, sizeof(T), &actual_len, epoch) && actual_len >= sizeof(T);
     }
     
+    // Check if there's new data since last receive
     bool has_new() {
         if (!topic) return false;
-        return bibi_byte_topic_has_new(topic) != 0;
+        uint64_t current_epoch = bibi_byte_topic_latest_epoch(topic);
+        return current_epoch > last_epoch;
+    }
+    
+    // Update last seen epoch after processing
+    void mark_seen() {
+        if (topic) {
+            last_epoch = bibi_byte_topic_latest_epoch(topic);
+        }
     }
     
     size_t len() {
         if (!topic) return 0;
         return bibi_byte_topic_len(topic);
+    }
+    
+    bool is_empty() {
+        if (!topic) return true;
+        return bibi_byte_topic_is_empty(topic);
     }
 };
 
